@@ -5,6 +5,27 @@
 
 <br>
 
+## lua优点是什么? 什么情况下需要使用lua
+
+lua运行速度极快  比触发器快了几百倍(保守估计)
+
+相对于触发器 lua更加擅长编写复杂的逻辑 
+
+如果你会用ai 可以让ai帮你编写一些小代码
+
+![alt text](image-25.png)
+
+lua可以调用更多的unity函数 可以做到触发器无法实现的事情
+![alt text](image-26.png)
+>用lua调用的unity3D
+
+如果你需要: 
+- 编写复杂的逻辑
+- 调用更多的unity函数
+- 想要更快的运行速度
+
+那么请使用lua
+
 ## 如何开始使用ic内置lua
 
 这个教程建立在你已经会使用触发器的基础上
@@ -621,7 +642,7 @@ lua有内置的数学函数
 
 ![alt text](image-18.png)
 
-`UnityEngine.Vector2(0,0)`是二维向量在lua的写法 两个0分别是x值和y值
+`UnityEngine.Vector2(0,0)`是unity中二维向量在lua的创建写法 两个0分别是x值和y值
 
 ![alt text](image-19.png)
 直接更改参数即可改变创建坐标
@@ -629,10 +650,341 @@ lua有内置的数学函数
 ![alt text](image-20.png)
 >水果可爱捏
 
+
+由于x提供的参数数据不太正确  有这种看起来没有给单位参数的函数
+
+![alt text](image-23.png)
+
+直接用`:`调用就可以了
+
+`单位` 是要设置坐标的单位变量名
+
+![alt text](image-24.png)
+
+
+
 #### lua使用技巧
+
 可以用触发器直接将字符串作为lua执行
 ![alt text](image-22.png)
 
 
-# 未完待续喵
+##### 在lua中使用print
 
+默认的print函数不会把信息打印到ic的信息面板!
+
+我们可以重定义print函数来使其对应ic的输出函数
+
+在执行lua代码之前执行以下代码就可以直接运行了
+```lua
+-- 重定义 print 函数
+print = function(...)
+    -- 获取所有参数
+    local args = { ... }
+
+    -- 将参数转换为字符串并拼接
+    local output = {}
+    for i = 1, select('#', ...) do
+        table.insert(output, tostring(args[i]))
+    end
+
+    -- 拼接所有参数，用制表符分隔（和标准print一致）
+    local message = table.concat(output, "\t")
+
+    -- 调用 UI_InfoPanel.AddInfo 显示信息
+    UI_InfoPanel.AddInfo(message, -1);
+end
+
+
+
+```
+
+# 进阶
+
+
+## 调用unity函数
+
+lua的自动补全默认不显示unity函数
+
+想要显示需要在 编辑器的右上角 编辑器设置
+
+![alt text](image-27.png)
+将帮助显示按钮显示模式修改为 全部
+
+重进一下 自动补全就出现了很多新函数
+
+![alt text](image-28.png)
+
+注意, 直接使用unity函数很容易把ic游戏搞出bug, 使用函数很多情况下需要对应的unity知识
+
+unity函数的官方手册
+https://docs.unity.cn/cn/2020.3/Manual/UnityManual.html
+
+
+另外 如果需要获取ic中单位的GameObject和Transform
+
+单位.gameObject
+单位.transform
+
+不要直接把单位当GameObject用
+
+
+你可能需要的函数?
+
+```lua
+    UnityEngine.Screen.SetResolution( 1000 , 1000 , false )
+    --设置窗口分辨率
+
+    --lua设置窗口标题貌似做不到  触发器里面有直接设置窗口标题的函数 凑合用一下吧
+    -- 系统函数 > 修改窗口名字       这个函数貌似只能改一次名字  第二次会找不到
+```
+
+## 如何在lua使用ic的等待
+
+需要使用新的lua知识点:协程
+
+```lua
+local function myCoroutine()
+    print("开始执行")
+    print("暂停一下。")
+    coroutine.yield(5) -- 暂停函数 并返回5
+    print("继续执行")
+end
+
+--coroutine是lua的内置表
+local co = coroutine.create(myCoroutine) --创建一个逐步执行的函数
+
+print("运行1")
+local res,a = coroutine.resume(co)
+print("暂停帧数",a)
+
+print("运行2")
+
+
+```
+
+运行将得到
+
+```
+运行1
+开始执行
+暂停一下。
+暂停帧数	5
+运行2
+```
+
+myCoroutine函数在执行到一半中断了  返回了5  
+
+我们可以根据返回的数值 在合适的时间继续执行
+
+</br>
+
+>注意: ic触发器不会主动运行协程  不要被ai给骗了 ai给的协程执行方式都无法在ic使用
+
+</br>
+
+如果要实现ic的等待函数功能
+
+我们需要自己实现一整套协程管理器 
+通过ic每物理帧调用lua函数(物理帧的时间间隔很稳定)
+
+在调用的函数中检查是否有 等待已经完成 需要执行的函数
+
+复杂的代码实现很麻烦 不过不奇怪已经写好功能包了 直接拿来用就是了
+![alt text](image-30.png)
+
+完整代码放在了教程结尾
+
+
+
+## 待更新 如何使用vscode编写ic lua
+
+
+
+
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+
+
+
+
+
+
+
+
+```lua
+-- 等待函数完整代码 直接从功能包复制的
+
+
+-- 重定义了 print 函数 不需要可以删除这句
+print = function(...)
+    local args = {...}
+    
+    -- 将参数转换为字符串并拼接
+    local output = {}
+    for i = 1, select('#', ...) do
+        table.insert(output, tostring(args[i]))
+    end
+    
+    -- 拼接所有参数，用制表符分隔（和标准print一致）
+    local message = table.concat(output, "\t")
+    
+    -- 调用 UI_InfoPanel.AddInfo 显示信息
+    UI_InfoPanel.AddInfo(message, -1);
+end
+
+CoroutineExecutor = {}
+
+-- 构造函数
+function CoroutineExecutor.new()
+    local self = {
+        runningCoroutines = {},  -- 正在运行的协程表
+        nextId = 1,              -- 下一个协程ID
+        paused = false           -- 是否暂停所有协程
+    }
+    setmetatable(self, {__index = CoroutineExecutor})
+    return self
+end
+
+-- 启动一个协程
+function CoroutineExecutor:yb(func, ...)
+    if type(func) ~= "function" then
+        return;
+    end
+    
+    local co = coroutine.create(func)
+    local id = self.nextId
+    self.nextId = self.nextId + 1
+    
+    -- 初始执行协程
+    local success, result = coroutine.resume(co, ...)
+    
+    if not success then
+        -- 协程出错
+        print("函数运行错误!")
+        ActionFunction:ThrowError(result)
+        return nil
+    end
+    
+    if coroutine.status(co) ~= "dead" then
+        -- 协程还未结束，加入运行列表
+        self.runningCoroutines[id] = {
+            co = co,
+            result = result
+        }
+        return id
+    else
+        -- 协程立即完成
+        return nil
+    end
+end
+
+-- 停止指定协程
+function CoroutineExecutor:stop(id)
+    self.runningCoroutines[id] = nil
+end
+
+-- 停止所有协程
+function CoroutineExecutor:stopall()
+    self.runningCoroutines = {}
+end
+
+-- 暂停/恢复所有协程
+function CoroutineExecutor:setPaused(paused)
+    self.paused = paused
+end
+
+-- 重要    给触发器 外部调用的更新函数，每帧调用一次
+function CoroutineExecutor:update()
+    if self.paused then return end
+    
+    -- 遍历所有协程
+    for id, data in pairs(self.runningCoroutines) do
+        local co = data.co
+        
+        if coroutine.status(co) == "dead" then
+            -- 协程已经完成，移除
+            self.runningCoroutines[id] = nil
+        else
+            -- 恢复协程执行
+            local success, result = coroutine.resume(co, data.result)
+            
+            if not success then
+                -- 协程出错
+                print("函数运行错误!")
+                ActionFunction:ThrowError(result)
+                self.runningCoroutines[id] = nil
+            else
+                -- 更新结果
+                data.result = result
+                
+                if coroutine.status(co) == "dead" then
+                    -- 协程完成，移除
+                    self.runningCoroutines[id] = nil
+                end
+            end
+        end
+    end
+end
+
+-- 等待一帧（单位时间）
+function CoroutineExecutor.waitone()
+    return coroutine.yield("waitForNextFrame")
+end
+
+-- 等待指定帧数（单位时间）
+function CoroutineExecutor.wait(frames)
+    for i = 1, frames do
+        CoroutineExecutor.waitone()
+    end
+end
+
+buqiguai_api = CoroutineExecutor.new(); 
+--协程api
+
+--调用接口
+
+--等待函数
+wait = buqiguai_api.wait
+
+--启动函数 用于创建需要等待的函数块
+async = function (fun)
+   	return buqiguai_api:yb(fun)
+end
+
+-- 停止指定
+stop =function (id)
+   	return buqiguai_api:stop(id)
+end
+
+--停止所有
+stopall =function (id)
+   	return buqiguai_api:stopall(id)
+end
+
+--暂停/恢复所有
+setPaused = function (id)
+   	return buqiguai_api:setPaused(id)
+end
+
+--使用示例
+
+async(function()
+	UI_InfoPanel.AddInfo( "信息1" , -1 )
+	--wait 函数必须在 async(function() end)包裹起来的地方才有效
+	wait(100)
+	--等待100物理帧数
+	UI_InfoPanel.AddInfo( "信息2" , -1 )
+	wait(60) 
+	--等待60物理帧数
+	UI_InfoPanel.AddInfo( "信息3" , -1 )
+end)
+
+
+
+```
