@@ -799,7 +799,7 @@ myCoroutine函数在执行到一半中断了  返回了5
 
 ## 待更新 如何使用vscode编写ic lua
 
-
+## 待更新 如何让ai写出能在ic运行的lua代码
 
 
 </br>
@@ -984,6 +984,7 @@ async(function()
 	--等待60物理帧数
 	UI_InfoPanel.AddInfo( "信息3" , -1 )
 end)
+
 
 
 
