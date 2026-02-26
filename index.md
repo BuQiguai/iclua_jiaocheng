@@ -759,7 +759,7 @@ local res,a = coroutine.resume(co)
 print("暂停帧数",a)
 
 print("运行2")
-
+coroutine.resume(co) --继续中断的位置执行
 
 ```
 
@@ -771,6 +771,7 @@ print("运行2")
 暂停一下。
 暂停帧数	5
 运行2
+继续执行
 ```
 
 myCoroutine函数在执行到一半中断了  返回了5  
@@ -794,7 +795,6 @@ myCoroutine函数在执行到一半中断了  返回了5
 ![alt text](image-30.png)
 
 完整代码放在了教程结尾
-
 
 
 ## 待更新 如何使用vscode编写ic lua
@@ -990,4 +990,5 @@ end)
 
 
 ```
+
 
